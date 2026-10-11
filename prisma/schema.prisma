@@ -1,4 +1,4 @@
-// Prisma schema for ABC University — Integrated Academic Management System.
+// Prisma schema for ABC University - Integrated Academic Management System.
 // Mirrors the exact 23-relation DA2 spec. Table/column names are preserved
 // via @@map/@map (Oracle NUMBER/VARCHAR2/DATE -> Int/Float/String).
 // CHECK constraints + ON DELETE actions live in prisma/migrations/0_init/migration.sql

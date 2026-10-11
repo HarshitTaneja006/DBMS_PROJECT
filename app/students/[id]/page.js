@@ -4,7 +4,7 @@ function KV({ k, v, href }) {
   return (
     <div className="kv">
       <span>{k}</span>
-      <b>{href ? <a href={href}>{v}</a> : v ?? "—"}</b>
+      <b>{href ? <a href={href}>{v}</a> : v ?? "-"}</b>
     </div>
   );
 }
@@ -31,8 +31,8 @@ export default async function StudentPage({ params }) {
           </div>
         </div>
         <div className="stats">
-          <div className="stat"><span>Avg marks</span><b>{s.avgMarks ?? "—"}</b></div>
-          <div className="stat"><span>Attendance</span><b>{s.attendancePct !== null ? `${s.attendancePct}%` : "—"}</b></div>
+          <div className="stat"><span>Avg marks</span><b>{s.avgMarks ?? "-"}</b></div>
+          <div className="stat"><span>Attendance</span><b>{s.attendancePct !== null ? `${s.attendancePct}%` : "-"}</b></div>
           <div className="stat"><span>Courses</span><b>{s.enrollments.length}</b></div>
           <div className="stat"><span>Completed</span><b>{s.completed}</b></div>
         </div>
@@ -48,7 +48,7 @@ export default async function StudentPage({ params }) {
           <KV k="Program" v={`${s.program.name} (${s.program.level})`} />
           <KV k="Department" v={s.program.department.name} />
           <KV k="School" v={s.program.department.school.name} />
-          <KV k="Mentor" v={s.mentor ? `${s.mentor.name} (#${s.mentor.facultyId})` : "—"} href={s.mentor ? `/faculty/${s.mentor.facultyId}` : null} />
+          <KV k="Mentor" v={s.mentor ? `${s.mentor.name} (#${s.mentor.facultyId})` : "-"} href={s.mentor ? `/faculty/${s.mentor.facultyId}` : null} />
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export default async function StudentPage({ params }) {
             {s.enrollments.map((e) => (
               <tr key={`${e.courseId}-${e.year}-${e.semester}`}>
                 <td><a href={`/courses/${e.courseId}`}>{e.course.name} (#{e.courseId})</a></td>
-                <td>{e.year}</td><td>{e.semester}</td><td>{e.grade ?? "—"}</td>
+                <td>{e.year}</td><td>{e.semester}</td><td>{e.grade ?? "-"}</td>
               </tr>
             ))}
           </tbody>
@@ -124,7 +124,7 @@ export default async function StudentPage({ params }) {
               {s.allocations.map((a, i) => (
                 <tr key={i}>
                   <td>{a.room.hostel.name}</td><td>{a.roomNo} ({a.room.type})</td>
-                  <td>{a.allocDate}</td><td>{a.vacateDate ?? "—"}</td>
+                  <td>{a.allocDate}</td><td>{a.vacateDate ?? "-"}</td>
                 </tr>
               ))}
             </tbody>

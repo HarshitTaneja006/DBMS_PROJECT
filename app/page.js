@@ -4,7 +4,7 @@ import SearchBox from "../components/SearchBox";
 export default function Home() {
   return (
     <div>
-      <h1>ABC University — Integrated Academic Management</h1>
+      <h1>ABC University - Integrated Academic Management</h1>
       <p className="muted">
         Open any table to view rows, insert new rows,
         edit, or delete. Primary-key columns are marked with *.

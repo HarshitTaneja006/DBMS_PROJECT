@@ -14,7 +14,7 @@ function Field({ col, value, onChange, fkOptions, isPk }) {
   if (opts) {
     return (
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
-        <option value="">— NULL —</option>
+        <option value="">- NULL -</option>
         {opts.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -238,7 +238,7 @@ export default function TablePage() {
           </tbody>
         </table>
       </div>
-      {data.rows.length === 0 && <p className="muted">No rows yet — use the form above to insert.</p>}
+      {data.rows.length === 0 && <p className="muted">No rows yet - use the form above to insert.</p>}
       <p className="hint">
         PK columns (*) cannot be edited after insert (standard SQL rule). To change a PK, delete and
         re-insert the row. Dates: use YYYY-MM-DD. Foreign-key violations are rejected by SQLite.

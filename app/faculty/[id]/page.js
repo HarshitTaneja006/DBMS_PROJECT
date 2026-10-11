@@ -4,7 +4,7 @@ function KV({ k, v, href }) {
   return (
     <div className="kv">
       <span>{k}</span>
-      <b>{href ? <a href={href}>{v}</a> : v ?? "—"}</b>
+      <b>{href ? <a href={href}>{v}</a> : v ?? "-"}</b>
     </div>
   );
 }

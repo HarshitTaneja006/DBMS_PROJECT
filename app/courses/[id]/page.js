@@ -4,7 +4,7 @@ function KV({ k, v }) {
   return (
     <div className="kv">
       <span>{k}</span>
-      <b>{v ?? "—"}</b>
+      <b>{v ?? "-"}</b>
     </div>
   );
 }
@@ -30,9 +30,9 @@ export default async function CoursePage({ params }) {
         </div>
         <div className="stats">
           <div className="stat"><span>Enrolled</span><b>{c.enrollments.length}</b></div>
-          <div className="stat"><span>Avg marks</span><b>{c.stats?.avg ?? "—"}</b></div>
-          <div className="stat"><span>Min / Max</span><b>{c.stats ? `${c.stats.min} / ${c.stats.max}` : "—"}</b></div>
-          <div className="stat"><span>Attendance</span><b>{c.attendanceTotal ? `${c.attendancePresent}/${c.attendanceTotal}` : "—"}</b></div>
+          <div className="stat"><span>Avg marks</span><b>{c.stats?.avg ?? "-"}</b></div>
+          <div className="stat"><span>Min / Max</span><b>{c.stats ? `${c.stats.min} / ${c.stats.max}` : "-"}</b></div>
+          <div className="stat"><span>Attendance</span><b>{c.attendanceTotal ? `${c.attendancePresent}/${c.attendanceTotal}` : "-"}</b></div>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export default async function CoursePage({ params }) {
               {c.enrollments.map((e) => (
                 <tr key={`${e.studentId}-${e.year}-${e.semester}`}>
                   <td><a href={`/students/${e.studentId}`}>{e.student.name} (#{e.studentId})</a></td>
-                  <td>{e.year}</td><td>{e.semester}</td><td>{e.grade ?? "—"}</td>
+                  <td>{e.year}</td><td>{e.semester}</td><td>{e.grade ?? "-"}</td>
                 </tr>
               ))}
             </tbody>

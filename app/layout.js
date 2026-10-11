@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "ABC University — Academic Management",
+  title: "ABC University - Academic Management",
   description: "Simple SQLite-backed academic management (23 tables)",
 };
 
