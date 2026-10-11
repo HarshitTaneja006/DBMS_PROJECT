@@ -1,4 +1,5 @@
 import { TABLES, TABLE_NAMES } from "../lib/tables";
+import SearchBox from "../components/SearchBox";
 
 export default function Home() {
   return (
@@ -7,7 +8,10 @@ export default function Home() {
       <p className="muted">
         Open any table to view rows, insert new rows,
         edit, or delete. Primary-key columns are marked with *.
+        Foreign-key columns offer dropdowns of valid values.
       </p>
+      <h2>Find a student, faculty member or course</h2>
+      <SearchBox />
       <h2>All tables (23)</h2>
       <div className="grid">
         {TABLE_NAMES.map((t) => (
@@ -19,11 +23,6 @@ export default function Home() {
           </a>
         ))}
       </div>
-      <h2>How to run</h2>
-      <p className="muted">
-        1. <code>npm install</code> · 2. <code>npm run db:init</code> (creates + seeds
-        SQLite file) · 3. <code>npm run dev</code> (open http://localhost:3000)
-      </p>
     </div>
   );
 }

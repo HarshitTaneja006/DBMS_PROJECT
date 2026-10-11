@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
           <a href="/" className="brand">
             ABC University
           </a>
-          <span className="sub">Integrated Academic Management · SQLite via Prisma · prisma/dev.db</span>
+          <span className="sub">Integrated Academic Management</span>
         </header>
         <main className="wrap">{children}</main>
       </body>

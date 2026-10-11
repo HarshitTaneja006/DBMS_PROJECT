@@ -2,9 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { FK_REFS } from "../../../lib/tables";
 
 function keyOf(pk, row) {
   return pk.map((k) => String(row[k] ?? "")).join(" | ");
+}
+
+// Text input, or a foreign-key dropdown when the column references another table.
+function Field({ col, value, onChange, fkOptions, isPk }) {
+  const opts = fkOptions[col.name];
+  if (opts) {
+    return (
+      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+        <option value="">— NULL —</option>
+        {opts.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  return (
+    <input
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={col.type + (isPk ? " (PK)" : "")}
+    />
+  );
 }
 
 export default function TablePage() {
@@ -15,6 +40,7 @@ export default function TablePage() {
   const [form, setForm] = useState({});
   const [editKey, setEditKey] = useState(null);
   const [editRow, setEditRow] = useState({});
+  const [fkOptions, setFkOptions] = useState({});
 
   async function load() {
     setErr("");
@@ -27,6 +53,20 @@ export default function TablePage() {
       const blank = {};
       for (const c of j.columns) blank[c.name] = "";
       setForm(blank);
+      // Foreign-key dropdown options
+      const refs = FK_REFS[name] || {};
+      const entries = await Promise.all(
+        Object.entries(refs).map(async ([col, refTable]) => {
+          try {
+            const or = await fetch(`/api/options?table=${refTable}`);
+            const oj = await or.json();
+            return [col, or.ok ? oj.options : []];
+          } catch {
+            return [col, []];
+          }
+        })
+      );
+      setFkOptions(Object.fromEntries(entries));
     } catch (e) {
       setErr(String(e.message));
     }
@@ -130,10 +170,13 @@ export default function TablePage() {
               <label key={c.name}>
                 {c.name}
                 {data.pk.includes(c.name) ? " *" : ""} <span className="hint">({c.type})</span>
-                <input
-                  value={form[c.name] ?? ""}
-                  onChange={(e) => setForm({ ...form, [c.name]: e.target.value })}
-                  placeholder={c.type + (data.pk.includes(c.name) ? " (PK)" : "")}
+                {fkOptions[c.name] && <span className="fk-tag">→ {FK_REFS[name][c.name]}</span>}
+                <Field
+                  col={c}
+                  value={form[c.name]}
+                  onChange={(v) => setForm({ ...form, [c.name]: v })}
+                  fkOptions={fkOptions}
+                  isPk={data.pk.includes(c.name)}
                 />
               </label>
             ))}
@@ -164,9 +207,12 @@ export default function TablePage() {
                   {data.columns.map((c) => (
                     <td key={c.name}>
                       {editing && !data.pk.includes(c.name) ? (
-                        <input
+                        <Field
+                          col={c}
                           value={editRow[c.name] ?? ""}
-                          onChange={(e) => setEditRow({ ...editRow, [c.name]: e.target.value })}
+                          onChange={(v) => setEditRow({ ...editRow, [c.name]: v })}
+                          fkOptions={fkOptions}
+                          isPk={false}
                         />
                       ) : (
                         String(row[c.name] ?? "")
