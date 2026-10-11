@@ -1,0 +1,304 @@
+// Prisma schema for ABC University — Integrated Academic Management System.
+// Mirrors the exact 23-relation DA2 spec. Table/column names are preserved
+// via @@map/@map (Oracle NUMBER/VARCHAR2/DATE -> Int/Float/String).
+// CHECK constraints + ON DELETE actions live in prisma/migrations/0_init/migration.sql
+// (Prisma schema cannot express CHECKs); the DDL below matches that migration.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  schoolId    Int          @id @map("School_ID")
+  name        String       @map("Name")
+  location    String       @map("Location")
+  departments Department[]
+
+  @@map("SCHOOL")
+}
+
+model Department {
+  deptId   Int       @id @map("Dept_ID")
+  name     String    @map("Name")
+  schoolId Int       @map("School_ID")
+  school   School    @relation(fields: [schoolId], references: [schoolId])
+  programs Program[]
+  faculty  Faculty[]
+  courses  Course[]
+
+  @@map("DEPARTMENT")
+}
+
+model Program {
+  programId  Int        @id @map("Program_ID")
+  name       String     @map("Name")
+  level      String     @map("Level")
+  duration   Int        @map("Duration")
+  deptId     Int        @map("Dept_ID")
+  department Department @relation(fields: [deptId], references: [deptId])
+  students   Student[]
+
+  @@map("PROGRAM")
+}
+
+model Faculty {
+  facultyId     Int      @id @map("Faculty_ID")
+  name          String   @map("Name")
+  email         String   @unique @map("Email")
+  phone         String?  @map("Phone")
+  doj           String   @map("DOJ")
+  facultyType   String   @map("Faculty_Type")
+  deptId        Int      @map("Dept_ID")
+  department    Department @relation(fields: [deptId], references: [deptId])
+  mentees       Student[]  @relation("Mentor")
+  teaches       Teaches[]
+  supervised    Project[]
+  qualifications FacultyQualification[]
+  permanent     PermanentFaculty?
+  adjunct       AdjunctFaculty?
+  visiting      VisitingFaculty?
+
+  @@map("FACULTY")
+}
+
+model Student {
+  studentId       Int       @id @map("Student_ID")
+  name            String    @map("Name")
+  dob             String    @map("DOB")
+  gender          String?   @map("Gender")
+  address         String?   @map("Address")
+  email           String    @unique @map("Email")
+  enrollmentYear  Int       @map("Enrollment_Year")
+  programId       Int       @map("Program_ID")
+  program         Program   @relation(fields: [programId], references: [programId])
+  mentorFacultyId Int?      @map("Mentor_Faculty_ID")
+  mentor          Faculty?  @relation("Mentor", fields: [mentorFacultyId], references: [facultyId])
+  mentorStartDate String?   @map("Mentor_Start_Date")
+  phones          StudentPhone[]
+  enrollments     Enrollment[]
+  attendance      Attendance[]
+  marks           Marks[]
+  awarded         Awarded[]
+  allocations     Allocation[]
+  undertakes      Undertakes[]
+
+  @@map("STUDENT")
+}
+
+model StudentPhone {
+  studentId Int     @map("Student_ID")
+  phone     String  @map("Phone")
+  student   Student @relation(fields: [studentId], references: [studentId])
+
+  @@id([studentId, phone])
+  @@map("STUDENT_PHONE")
+}
+
+model FacultyQualification {
+  facultyId     Int     @map("Faculty_ID")
+  qualification String  @map("Qualification")
+  faculty       Faculty @relation(fields: [facultyId], references: [facultyId])
+
+  @@id([facultyId, qualification])
+  @@map("FACULTY_QUALIFICATION")
+}
+
+model PermanentFaculty {
+  facultyId        Int      @id @map("Faculty_ID")
+  faculty          Faculty  @relation(fields: [facultyId], references: [facultyId])
+  salary           Float    @map("Salary")
+  pfNumber         String   @unique @map("PF_Number")
+  confirmationDate String?  @map("Confirmation_Date")
+
+  @@map("PERMANENT_FACULTY")
+}
+
+model AdjunctFaculty {
+  facultyId       Int     @id @map("Faculty_ID")
+  faculty         Faculty @relation(fields: [facultyId], references: [facultyId])
+  hourlyRate      Float   @map("Hourly_Rate")
+  contractEndDate String  @map("Contract_End_Date")
+
+  @@map("ADJUNCT_FACULTY")
+}
+
+model VisitingFaculty {
+  facultyId           Int     @id @map("Faculty_ID")
+  faculty             Faculty @relation(fields: [facultyId], references: [facultyId])
+  homeInstitution     String  @map("Home_Institution")
+  visitDurationMonths Int     @map("Visit_Duration_Months")
+
+  @@map("VISITING_FACULTY")
+}
+
+model Course {
+  courseId   Int       @id @map("Course_ID")
+  name       String    @map("Name")
+  credits    Int       @map("Credits")
+  courseType String    @map("Course_Type")
+  deptId     Int       @map("Dept_ID")
+  department Department @relation(fields: [deptId], references: [deptId])
+  components AssessmentComponent[]
+  enrollments Enrollment[]
+  attendance Attendance[]
+  teaches    Teaches[]
+
+  @@map("COURSE")
+}
+
+model AssessmentComponent {
+  courseId    Int     @map("Course_ID")
+  componentNo Int     @map("Component_No")
+  type        String  @map("Type")
+  maxMarks    Float   @map("Max_Marks")
+  weightage   Float   @map("Weightage")
+  course      Course  @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  marks       Marks[]
+
+  @@id([courseId, componentNo])
+  @@map("ASSESSMENT_COMPONENT")
+}
+
+model Enrollment {
+  studentId Int     @map("Student_ID")
+  courseId  Int     @map("Course_ID")
+  year      Int     @map("Year")
+  semester  Int     @map("Semester")
+  grade     String? @map("Grade")
+  student   Student @relation(fields: [studentId], references: [studentId])
+  course    Course  @relation(fields: [courseId], references: [courseId])
+  marks     Marks[]
+
+  @@id([studentId, courseId, year, semester])
+  @@map("ENROLLMENT")
+}
+
+model Attendance {
+  attendanceId Int     @id @map("Attendance_ID")
+  studentId    Int     @map("Student_ID")
+  courseId     Int     @map("Course_ID")
+  year         Int     @map("Year")
+  semester     Int     @map("Semester")
+  attDate      String  @map("Att_Date")
+  status       String  @map("Status")
+  student      Student @relation(fields: [studentId], references: [studentId])
+  course       Course  @relation(fields: [courseId], references: [courseId])
+
+  @@unique([studentId, courseId, attDate])
+  @@map("ATTENDANCE")
+}
+
+model Marks {
+  studentId     Int     @map("Student_ID")
+  courseId      Int     @map("Course_ID")
+  year          Int     @map("Year")
+  semester      Int     @map("Semester")
+  componentNo   Int     @map("Component_No")
+  marksObtained Float   @map("Marks_Obtained")
+  student       Student @relation(fields: [studentId], references: [studentId])
+  enrollment    Enrollment @relation(fields: [studentId, courseId, year, semester], references: [studentId, courseId, year, semester])
+  component     AssessmentComponent @relation(fields: [courseId, componentNo], references: [courseId, componentNo])
+
+  @@id([studentId, courseId, year, semester, componentNo])
+  @@map("MARKS")
+}
+
+model Teaches {
+  courseId  Int     @map("Course_ID")
+  year      Int     @map("Year")
+  semester  Int     @map("Semester")
+  facultyId Int     @map("Faculty_ID")
+  course    Course  @relation(fields: [courseId], references: [courseId])
+  faculty   Faculty @relation(fields: [facultyId], references: [facultyId])
+
+  @@id([courseId, year, semester])
+  @@map("TEACHES")
+}
+
+model Scholarship {
+  scholarshipId Int       @id @map("Scholarship_ID")
+  name          String    @map("Name")
+  type          String    @map("Type")
+  amount        Float     @map("Amount")
+  eligibility   String?   @map("Eligibility")
+  awards        Awarded[]
+
+  @@map("SCHOLARSHIP")
+}
+
+model Awarded {
+  studentId     Int         @map("Student_ID")
+  scholarshipId Int         @map("Scholarship_ID")
+  year          Int         @map("Year")
+  awardDate     String      @map("Award_Date")
+  student       Student     @relation(fields: [studentId], references: [studentId])
+  scholarship   Scholarship @relation(fields: [scholarshipId], references: [scholarshipId])
+
+  @@id([studentId, scholarshipId, year])
+  @@map("AWARDED")
+}
+
+model Hostel {
+  hostelId Int     @id @map("Hostel_ID")
+  name     String  @map("Name")
+  warden   String  @map("Warden")
+  capacity Int     @map("Capacity")
+  rooms    Room[]
+
+  @@map("HOSTEL")
+}
+
+model Room {
+  hostelId Int     @map("Hostel_ID")
+  roomNo   String  @map("Room_No")
+  capacity Int     @map("Capacity")
+  type     String  @map("Type")
+  hostel   Hostel  @relation(fields: [hostelId], references: [hostelId], onDelete: Cascade)
+  allocations Allocation[]
+
+  @@id([hostelId, roomNo])
+  @@map("ROOM")
+}
+
+model Allocation {
+  studentId  Int      @map("Student_ID")
+  hostelId   Int      @map("Hostel_ID")
+  roomNo     String   @map("Room_No")
+  allocDate  String   @map("Alloc_Date")
+  vacateDate String?  @map("Vacate_Date")
+  student    Student  @relation(fields: [studentId], references: [studentId])
+  room       Room     @relation(fields: [hostelId, roomNo], references: [hostelId, roomNo])
+
+  @@id([studentId, hostelId, roomNo, allocDate])
+  @@map("ALLOCATION")
+}
+
+model Project {
+  projectId Int       @id @map("Project_ID")
+  title     String    @map("Title")
+  type      String    @map("Type")
+  startDate String    @map("Start_Date")
+  endDate   String?   @map("End_Date")
+  hostOrg   String?   @map("Host_Org")
+  facultyId Int?      @map("Faculty_ID")
+  supervisor Faculty? @relation(fields: [facultyId], references: [facultyId], onDelete: SetNull)
+  undertakes Undertakes[]
+
+  @@map("PROJECT")
+}
+
+model Undertakes {
+  studentId Int     @map("Student_ID")
+  projectId Int     @map("Project_ID")
+  role      String  @map("Role")
+  student   Student @relation(fields: [studentId], references: [studentId])
+  project   Project @relation(fields: [projectId], references: [projectId])
+
+  @@id([studentId, projectId])
+  @@map("UNDERTAKES")
+}
