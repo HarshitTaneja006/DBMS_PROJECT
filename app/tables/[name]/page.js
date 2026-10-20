@@ -146,7 +146,7 @@ export default function TablePage() {
           ← All tables
         </a>
         <h1>{name}</h1>
-        <div className="err">{err} (Did you run: npm run db:init ?)</div>
+        <div className="err">{err} (MongoDB: check MONGODB_URI in .env, Atlas IP allowlist, then run: npm run db:seed:mongo)</div>
       </div>
     );
   if (!data) return <div>Loading {name} …</div>;
