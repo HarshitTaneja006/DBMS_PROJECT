@@ -146,7 +146,7 @@ export default function TablePage() {
           ← All tables
         </a>
         <h1>{name}</h1>
-        <div className="err">{err} (MongoDB: check MONGODB_URI in .env, Atlas IP allowlist, then run: npm run db:seed:mongo)</div>
+        <div className="err">{err} (CouchDB: check COUCHDB_URL in .env, ensure CouchDB is running, then run: npm run db:seed)</div>
       </div>
     );
   if (!data) return <div>Loading {name} …</div>;
@@ -240,8 +240,8 @@ export default function TablePage() {
       </div>
       {data.rows.length === 0 && <p className="muted">No rows yet - use the form above to insert.</p>}
       <p className="hint">
-        PK columns (*) cannot be edited after insert (standard SQL rule). To change a PK, delete and
-        re-insert the row. Dates: use YYYY-MM-DD. Foreign-key violations are rejected by SQLite.
+        PK columns (*) cannot be edited after insert. To change a PK, delete and
+        re-insert the row. Dates: use YYYY-MM-DD. Foreign-key violations are rejected by the CouchDB API layer.
       </p>
     </div>
   );

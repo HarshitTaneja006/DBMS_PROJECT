@@ -1,6 +1,6 @@
 # ABC University - Integrated Academic Management
 
-A full-stack Database Management Systems project for ABC University. It models academic structure, people, teaching, assessment, scholarships, accommodation, and research in a normalized SQLite database. The Next.js application supplies generic CRUD screens, search, detailed entity views, and JSON APIs.
+A full-stack Database Management Systems project for ABC University. It models academic structure, people, teaching, assessment, scholarships, accommodation, and research in Apache CouchDB. The Next.js application supplies generic CRUD screens, search, detailed entity views, and JSON APIs.
 
 > The database has **23 relations**. The schema and migration are the source of truth; the web UI provides a practical way to explore and operate on them.
 
@@ -39,9 +39,8 @@ A full-stack Database Management Systems project for ABC University. It models a
 | --- | --- | --- |
 | Web framework | Next.js 15 App Router | Pages and backend route handlers |
 | UI | React 19 | Interactive search and CRUD interface |
-| ORM | Prisma 6 | Database access and model mapping |
-| Database | SQLite | Local relational database at `prisma/dev.db` |
-| Runtime | Node.js | Development server, migration, and seed execution |
+| Database | Apache CouchDB | Document database (`abc_university`) with deterministic `_id` keys, Mango indexes, and MapReduce views |
+| Runtime | Node.js | Development server and CouchDB seed execution |
 
 ### User capabilities
 
@@ -58,7 +57,7 @@ A full-stack Database Management Systems project for ABC University. It models a
 
 ### Prerequisites
 
-Install a current Node.js LTS release. Node.js 18.18+ is a sensible baseline for Next.js 15 and Prisma 6.
+Install a current Node.js LTS release (Node.js 20+) and have an Apache CouchDB instance running (for example locally on `http://127.0.0.1:5984` or via Docker: `docker run -d -p 5984:5984 -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=password couchdb:3`).
 
 ### Install and run
 
@@ -69,10 +68,11 @@ npm install
 Create `.env` in the project root:
 
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+COUCHDB_URL="http://admin:password@127.0.0.1:5984"
+COUCHDB_DB="abc_university"
 ```
 
-Create the schema and sample data:
+Create the CouchDB database, indexes, views, and sample data:
 
 ```sh
 npm run db:init
@@ -93,11 +93,9 @@ Open `http://localhost:3000`.
 | `npm run dev` | Start the development server |
 | `npm run build` | Create a production build |
 | `npm run start` | Start the production server after building |
-| `npm run db:init` | Deploy migrations and seed sample data |
-| `npm run db:seed` | Run only the seed script |
-| `npm run db:reset` | Delete local data, reapply migrations, and reseed |
-| `npm run db:studio` | Open Prisma Studio |
-| `npx prisma generate` | Regenerate Prisma Client |
+| `npm run db:init` | Create the CouchDB database, indexes, views, and seed sample data |
+| `npm run db:seed` | Run the CouchDB seed script (idempotent) |
+| `npm run db:reset` | Drop the CouchDB database, recreate it, and reseed |
 
 > `db:reset` destroys the current local data. Use it only for disposable development data.
 
@@ -111,16 +109,15 @@ flowchart TD
     Browser --> Client[Client CRUD and search components]
     Client --> API[API route handlers]
     Pages --> Lookup[Lookup and aggregation functions]
-    API --> Prisma[Prisma Client]
-    Lookup --> Prisma
-    Prisma --> SQLite[(SQLite database)]
+    API --> Couch[lib/couch.js REST Client]
+    Lookup --> Couch
+    Couch --> CouchDB[(Apache CouchDB)]
 ```
 
 - Server-rendered student, faculty, and course pages call `lib/lookup.js` directly.
 - The generic table page calls `/api/tables/[name]` for list, insert, update, and delete operations.
 - `lib/tables.js` centralizes relation names, columns, primary keys, and UI foreign-key references.
-- Prisma maps JavaScript-style fields such as `studentId` to database columns such as `Student_ID`.
-- `prisma/migrations/0_init/migration.sql` contains the actual SQLite DDL, including checks not expressible in Prisma schema syntax.
+- `lib/couch.js` stores each record in CouchDB with a deterministic `_id` (`<TABLE>:<PK_1>[:<PK_2>...]`) and `table: "<TABLE>"`, stripping `_id`, `_rev`, and `table` in API responses so the UI works with exact database column names (`Student_ID`, `Name`, etc.).
 
 ---
 
@@ -232,14 +229,14 @@ erDiagram
 
 ### Referential integrity
 
-SQLite prevents references to missing parent records. Examples:
+The CouchDB data layer enforces references to parent records before writes. Examples:
 
 - A student must reference a real program and, when present, a real mentor.
 - An enrollment must reference a real student and course.
 - A marks row requires both a valid enrollment and a valid assessment component.
 - An allocation must reference both a real student and a real composite room identity.
 
-The generic API translates common Prisma errors into friendly messages:
+The generic API translates CouchDB and validation errors into friendly messages:
 
 | Condition | Message |
 | --- | --- |
@@ -312,7 +309,7 @@ The generic table page loads up to 500 primary-key-ordered records. Primary-key 
 | `/api/tables/:name` | PUT | Update non-key columns using `{ key, row }` |
 | `/api/tables/:name` | DELETE | Delete using all primary-key query parameters |
 
-`/api/tables/:name` expects exact uppercase table names such as `STUDENT`, `ENROLLMENT`, or `PROJECT`. Responses use database column names such as `Student_ID`, not Prisma names such as `studentId`.
+`/api/tables/:name` expects exact uppercase table names such as `STUDENT`, `ENROLLMENT`, or `PROJECT`. Responses use database column names such as `Student_ID`, with internal CouchDB `_id` and `_rev` fields stripped.
 
 For a composite primary key, supply every component when deleting. For example:
 
@@ -326,14 +323,15 @@ DELETE /api/tables/ENROLLMENT?Student_ID=1001&Course_ID=401&Year=2025&Semester=1
 
 ### Seed data
 
-`scripts/seed.js` creates representative connected data:
+`scripts/couch-seed.js` creates representative connected data in CouchDB:
 
 - 5 schools, departments, programs, faculty members, students, courses, scholarships, hostels, projects, and relationship records.
 - 2 permanent, 2 adjunct, and 1 visiting faculty subtype records.
 - Enrollment, attendance, marks, and teaching records for 2025 semester 1.
 - Student phones, qualifications, room allocations, scholarship awards, and project roles.
+- Mango indexes (`/_index`) and a `_design/university` design document with MapReduce views.
 
-The seed is idempotent: it checks whether `SCHOOL` already contains data and skips insertion if so.
+The seed is idempotent: it checks whether `SCHOOL:1` already exists in CouchDB and skips insertion if so.
 
 ### File guide
 
@@ -342,10 +340,8 @@ app/                         Next.js pages and API route handlers
 components/SearchBox.js      Client-side scoped search
 lib/tables.js                Generic CRUD metadata and FK references
 lib/lookup.js                Search, detail queries, and aggregations
-lib/prisma.js                Reusable Prisma client
-prisma/schema.prisma         Prisma model definitions and database mappings
-prisma/migrations/           SQLite DDL, checks, and referential actions
-scripts/seed.js              Sample-data seed script
+lib/couch.js                 CouchDB HTTP REST client, CRUD, and index helpers
+scripts/couch-seed.js        Sample-data and index/view seed script for CouchDB
 ```
 ---
 
@@ -353,10 +349,8 @@ scripts/seed.js              Sample-data seed script
 
 | Symptom | Resolution |
 | --- | --- |
-| Database API returns an initialization hint | Confirm `.env` exists, then run `npm run db:init` |
-| Prisma client is missing | Run `npx prisma generate` |
+| Database API returns an initialization hint | Confirm `.env` has `COUCHDB_URL`, CouchDB is running, then run `npm run db:seed` |
 | Seed says data already exists | This is intentional; use `npm run db:reset` for fresh local data |
-| Delete fails | Remove dependent records first unless a documented cascade or set-null action applies |
 | Foreign-key dropdown lacks a value | Create the referenced parent record first |
 | Insert reports a foreign-key violation | Verify all referenced key values, including composite-key components |
 | Date validation behaves unexpectedly | Use `YYYY-MM-DD` format |

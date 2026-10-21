@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "ABC University - Academic Management",
-  description: "Simple SQLite-backed academic management (23 tables)",
+  description: "CouchDB-backed academic management (23 relations)",
 };
 
 export default function RootLayout({ children }) {
